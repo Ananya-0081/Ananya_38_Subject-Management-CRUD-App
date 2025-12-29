@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Subject Management System</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #f4f6f8;
+            padding: 20px;
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        .card {
+            background: white;
+            padding: 15px;
+            margin: 15px auto;
+            width: 600px;
+            border-radius: 6px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        input {
+            width: 95%;
+            padding: 8px;
+            margin: 5px 0;
+        }
+
+        button {
+            padding: 8px 15px;
+            margin-top: 8px;
+            cursor: pointer;
+        }
+
+        .add { background: green; color: white; border: none; }
+        .view { background: blue; color: white; border: none; }
+        .update { background: orange; border: none; }
+        .delete { background: red; color: white; border: none; }
+
+        .msg {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        .success { color: green; }
+        .error { color: red; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            border: 1px solid #aaa;
+            padding: 8px;
+            text-align: center;
+        }
+
+        th {
+            background: #eaeaea;
+        }
+    </style>
+</head>
+
+<body>
+
+<h2>Subject Management CRUD App</h2>
+
+<!-- ADD -->
+<div class="card">
+    <h3>Add Subject</h3>
+    <input id="id" placeholder="ID">
+    <input id="code" placeholder="Subject Code">
+    <input id="name" placeholder="Subject Name">
+    <button class="add" onclick="addSubject()">Add Subject</button>
+    <div id="addMsg" class="msg"></div>
+</div>
+
+<!-- VIEW -->
+<div class="card">
+    <h3>View Subjects</h3>
+    <button class="view" onclick="getSubjects()">Get All Subjects</button>
+    <div id="tableDiv"></div>
+</div>
+
+<!-- UPDATE -->
+<div class="card">
+    <h3>Update Subject</h3>
+    <input id="uid" placeholder="ID">
+    <input id="ucode" placeholder="New Subject Code">
+    <input id="uname" placeholder="New Subject Name">
+    <button class="update" onclick="updateSubject()">Update</button>
+    <div id="updateMsg" class="msg"></div>
+</div>
+
+<!-- DELETE -->
+<div class="card">
+    <h3>Delete Subject</h3>
+    <input id="did" placeholder="ID">
+    <button class="delete" onclick="deleteSubject()">Delete</button>
+    <div id="deleteMsg" class="msg"></div>
+</div>
+
+<script>
+    const baseUrl = "http://localhost:8080/subjects";
+
+    function addSubject() {
+        let id = val("id"), code = val("code"), name = val("name");
+
+        if (!id || !code || !name) {
+            show("addMsg", "All fields are required", false);
+            return;
+        }
+
+        fetch(baseUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id, subjectCode: code, subjectName: name })
+        })
+        .then(r => r.text())
+        .then(msg => show("addMsg", msg, true));
+    }
+
+    function getSubjects() {
+        fetch(baseUrl)
+        .then(r => r.json())
+        .then(data => {
+            if (data.length === 0) {
+                tableDiv.innerHTML = "<b>No Subjects Found</b>";
+                return;
+            }
+
+            let table = `
+                <table>
+                    <tr>
+                        <th>ID</th>
+                        <th>Subject Code</th>
+                        <th>Subject Name</th>
+                    </tr>`;
+
+            data.forEach(s => {
+                table += `
+                    <tr>
+                        <td>${s.id}</td>
+                        <td>${s.subjectCode}</td>
+                        <td>${s.subjectName}</td>
+                    </tr>`;
+            });
+
+            table += "</table>";
+            tableDiv.innerHTML = table;
+        });
+    }
+
+    function updateSubject() {
+        let id = val("uid");
+        if (!id) {
+            show("updateMsg", "ID is required", false);
+            return;
+        }
+
+        fetch(baseUrl + "/" + id, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                subjectCode: val("ucode"),
+                subjectName: val("uname")
+            })
+        })
+        .then(r => r.text())
+        .then(msg => {
+            if (msg.includes("Not Found"))
+                show("updateMsg", "No ID Found", false);
+            else
+                show("updateMsg", msg, true);
+        });
+    }
+
+    function deleteSubject() {
+        let id = val("did");
+        if (!id) {
+            show("deleteMsg", "ID is required", false);
+            return;
+        }
+
+        if (!confirm("Are you sure?")) return;
+
+        fetch(baseUrl + "/" + id, { method: "DELETE" })
+        .then(r => r.text())
+        .then(msg => {
+            if (msg.includes("Not Found"))
+                show("deleteMsg", "No ID Found", false);
+            else
+                show("deleteMsg", msg, true);
+        });
+    }
+
+    function val(id) {
+        return document.getElementById(id).value.trim();
+    }
+
+    function show(id, msg, ok) {
+        let el = document.getElementById(id);
+        el.innerText = msg;
+        el.className = "msg " + (ok ? "success" : "error");
+    }
+</script>
+
+</body>
+</html>
